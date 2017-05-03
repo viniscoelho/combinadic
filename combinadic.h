@@ -1,100 +1,90 @@
 #ifndef COMBINADIC_H
-    #define COMBINADIC_H
-    typedef long long int64;
+#define COMBINADIC_H
+typedef long long int64;
 #endif
 
 __device__ class Combination
 {
-    private:
-        int n, k;
-        int data[4];
-        int64 largestV(int, int, int64);
+private:
+    int n, k;
+    int data[4];
+    int64 largestV(int, int, int64);
 
-    public:
-        __device__ Combination(int n, int k)
+public:
+    __device__ Combination(int n, int k)
+    {
+        // n >= k
+        if (n < 0 || k < 0)
         {
-            // n >= k
-            if (n < 0 || k < 0)
-            {
-                printf("Negative parameter in constructor\n");
-                return;
-            }
-
-            this->n = n;
-            this->k = k;
-            for (int i = 0; i < k; i++) data[i] = i;
+            printf("Negative parameter in constructor\n");
+            return;
         }
 
-        __device__ Combination(int n, int k, int* a)
+        this->n = n;
+        this->k = k;
+        for (int i = 0; i < k; ++i) data[i] = i;
+    }
+
+    __device__ Combination(int n, int k, int* a)
+    {
+        this->n = n;
+        this->k = k;
+
+        for (int i = 0; i < k; ++i) data[i] = a[i];
+
+        if (!isValid())
         {
-            this->n = n;
-            this->k = k;
-
-            for (int i = 0; i < k; i++)
-                data[i] = a[i];
-
-            if (!isValid())
-            {
-                printf("Bad value from array!\n");
-                return;
-            }
+            printf("Bad value from array!\n");
+            return;
         }
-        
-        __device__ Combination(){ }
+    }
+    
+    __device__ Combination(){ }
 
-        __device__ static int64 choose(int n, int k)
+    __device__ static int64 choose(int n, int k)
+    {
+        if (n < 0 || k < 0)
         {
-            if (n < 0 || k < 0)
-            {
-                printf("Invalid negative parameter in choose()\n");
-                return -1;
-            }
-            if (n < k) return 0;  // special case
-            if (n == k) return 1;
+            printf("Invalid negative parameter in choose()\n");
+            return -1;
+        }
+        if (n < k) return 0;  // special case
+        if (n == k) return 1;
 
-            int64 delta, iMax;
+        int64 delta, iMax;
 
-            if (k < n-k) // ex: choose(100, 3)
-            {
-                delta = n-k;
-                iMax = k;
-            }
-            else         // ex: choose(100, 97)
-            {
-                delta = k;
-                iMax = n-k;
-            }
-
-            int64 ans = delta + 1;
-
-            for (int64 i = 2; i <= iMax; ++i)
-                ans = (ans * (delta + i)) / i; 
-
-            return ans;
+        if (k < n-k) // ex: choose(100, 3)
+        {
+            delta = n-k;
+            iMax = k;
+        }
+        else         // ex: choose(100, 97)
+        {
+            delta = k;
+            iMax = n-k;
         }
 
-        __device__ bool isValid();
-        __device__ Combination successor();
-        __device__ Combination element(int64);
-        __device__ int* getArray();
+        int64 ans = delta + 1;
+
+        for (int64 i = 2; i <= iMax; ++i)
+            ans = (ans * (delta + i)) / i; 
+
+        return ans;
+    }
+
+    __device__ bool isValid();
+    __device__ Combination successor();
+    __device__ Combination element(int64);
+    __device__ int* getArray();
 
 };
-
 /*
-    Returns the largest value v where v < a and choose(v, b) <= x
+    Returns if it is a valid combination
     */
-__device__ int64 Combination::largestV(int a, int b, int64 x)
-{
-    int v = a - 1;
-           
-    while (choose(v, b) > x) --v;
-
-    return v;
-}
-
 __device__ bool Combination::isValid()
 {
-    for (int i = 0; i < k; i++){
+    for (int i = 0; i < k; ++i)
+    {
         if (data[i] < 0 || data[i] > n - 1)
             return false; // value out of range
 
@@ -105,7 +95,19 @@ __device__ bool Combination::isValid()
 
     return true;
 }
+/* 
+    Return the largest value 'v' where 'v < a' and 'choose(v, b) <= x'
+    */
+__device__ int64 Combination::largestV(int a, int b, int64 x)
+{
+    int v = a - 1;
+    while (choose(v, b) > x) --v;
 
+    return v;
+}
+/*
+    Returns the next combination
+    */
 __device__ Combination Combination::successor()
 {
     if (data[0] == n - k) return Combination(0, 0);
@@ -125,7 +127,6 @@ __device__ Combination Combination::successor()
 
     return ans;
 }
-
 /*
     Returns the m-th lexicographic element of combination C(n, k)
     */
